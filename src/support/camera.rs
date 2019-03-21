@@ -23,7 +23,7 @@ impl Camera {
 		cgmath::Matrix4::look_at(
 				cgmath::Point3::new(self.position[0], self.position[1], self.position[2]),
 				cgmath::Point3::new(self.lookat.0, self.lookat.1, self.lookat.2),
-				cgmath::Point3::new(self.up.0, self.up.1, self.up.2))
+				cgmath::Vector3::new(self.up.0, self.up.1, self.up.2))
 	}
 	pub fn get_position(self) -> [f32; 3]{
 		(self.position.clone())
@@ -37,7 +37,7 @@ impl Camera {
 	pub fn set_lookat(&mut self, pos:[f32; 3]){
 		self.lookat=(pos[0],pos[1],pos[2]);
 	}
-	pub fn get_foward(self)->[f32; 3]{
+	pub fn get_forward(self)->[f32; 3]{
 		[self.lookat.0-self.position[0], self.lookat.1-self.position[1],self.lookat.2-self.position[2]]
 	}
 	pub fn get_up(self)->[f32; 3]{
@@ -48,9 +48,9 @@ impl Camera {
 		self.position = [self.position[0]+dir[0],self.position[1]+dir[1],self.position[2]+dir[2]];
 	}
 	pub fn get_cross_dir(self)->[f32; 3]{
-		[(self.ip.2*(self.lookat.1-self.position[1]))-(self.up.1*(self.lookat.2-self.position[2])),
-		(self.ip.0*(self.lookat.2-self.position[2]))-(self.up.2*(self.lookat.0-self.position[0])),
-		(self.ip.1*(self.lookat.0-self.position[0]))-(self.up.0*(self.lookat.1-self.position[1]))]
+		[(self.up.2*(self.lookat.1-self.position[1]))-(self.up.1*(self.lookat.2-self.position[2])),
+		(self.up.0*(self.lookat.2-self.position[2]))-(self.up.2*(self.lookat.0-self.position[0])),
+		(self.up.1*(self.lookat.0-self.position[0]))-(self.up.0*(self.lookat.1-self.position[1]))]
 	}
 	pub fn get_locked(self)-> bool{
 		self.locked

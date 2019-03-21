@@ -13,7 +13,7 @@ use vulkano::pipeline::shader::ShaderInterfaceDef;
 use vulkano::pipeline::vertex::AttributeInfo;
 use vulkano::pipeline::vertex::IncompatibleVertexDefinitionError;
 use vulkano::pipeline::vertex::InputRate;
-use vulkano::pipeline::vertex::Vertex;
+use vulkano::pipeline::vertex::Vertex as Pipevertex;
 use vulkano::pipeline::vertex::VertexDefinition;
 use vulkano::pipeline::vertex::VertexSource;
 use vulkano::image::immutable::ImmutableImage;
@@ -34,7 +34,7 @@ pub mod object;
 pub struct RenderObject{
 	pub vertex_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Vertex]>>,
 	pub tangent_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Tangent]>>,
-	pub bitangent_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Bitnagent]>>,
+	pub bitangent_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Bitangent]>>,
 	pub normal_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Normal]>>,
 	pub texture_base:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
 	pub texture_normal:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
@@ -62,7 +62,7 @@ impl RenderObject{
 			indices.push(mesh.indices[i]);
 		}
 		for i in 0..(mesh.positions.len()/3){
-			verticies.push(Vetrex{ position:(mesh.positions[i*3],
+			vertices.push(Vertex{ position:(mesh.positions[i*3],
 					mesh.positions[(i*3)+1],
 					mesh.positions[(i*3)+2])});
 			normals.push(Normal{ normal: (mesh.normals[i*3],
@@ -72,31 +72,64 @@ impl RenderObject{
 					1.0 - mesh.texcoords[(i*2)+1])});
 		}
 		//TODO:bitangent calculations here
-		for i in 0..(scene_vertices.len()/3){
-			let edge1 = Vertex {position:(scene_vertices[(i*3)+1].position.0-scene_vertices[(i*3)].position.0, scene_vertices[(i*3)+1].position.1-scene_vertices[(i*3)].position.1, scene_vertices[(i*3)+1].position.2-scene_vertices[(i*3)].position.2)};
-			let edge2 = Vertex {position:(scene_vertices[(i*3)+2].position.0-scene_vertices[(i*3)].position.0, scene_vertices[(i*3)+2].position.1-scene_vertices[(i*3)].position.1, scene_vertices[(i*3)+2].position.2-scene_vertices[(i*3)].position.2)};
-			let delta_uv1 = Texcoord{ coord:(scene_texcoords[(i*3)+1].coord.0+scene_texcoords[(i*3)].coord.0,scene_texcoords[(i*3)+1].coord.1+scene_texcoords[(i*3)].coord.1)};
-			let delta_uv2 = Texcoord{ coord:(scene_texcoords[(i*3)+2].coord.0+scene_texcoords[(i*3)].coord.0,scene_texcoords[(i*3)+2].coord.1+scene_texcoords[(i*3)].coord.1)};
+		for i in 0..(vertices.len()/3){
+			let edge1 = Vertex {position:(vertices[(i*3)+1].position.0-vertices[(i*3)].position.0, vertices[(i*3)+1].position.1-vertices[(i*3)].position.1, vertices[(i*3)+1].position.2-vertices[(i*3)].position.2)};
+			let edge2 = Vertex {position:(vertices[(i*3)+2].position.0-vertices[(i*3)].position.0, vertices[(i*3)+2].position.1-vertices[(i*3)].position.1, vertices[(i*3)+2].position.2-vertices[(i*3)].position.2)};
+			let delta_uv1 = Texcoord{ coord:(coords[(i*3)+1].coord.0+coords[(i*3)].coord.0,coords[(i*3)+1].coord.1+coords[(i*3)].coord.1)};
+			let delta_uv2 = Texcoord{ coord:(coords[(i*3)+2].coord.0+coords[(i*3)].coord.0,coords[(i*3)+2].coord.1+coords[(i*3)].coord.1)};
 
 			let f = 1.0/(delta_uv1.coord.0*delta_uv2.coord.1- delta_uv2.coord.0*delta_uv1.coord.1);
 			//normalize the two normal vectors
 			let temp = Tangent{tangent:((f*(delta_uv2.coord.1*edge1.position.0 - delta_uv1.coord.1*edge2.position.0))/255.0,
                                         (f*(delta_uv2.coord.1*edge1.position.1 - delta_uv1.coord.1*edge2.position.1))/255.0,
                                         (f*(delta_uv2.coord.1*edge1.position.2 - delta_uv1.coord.1*edge2.position.2))/255.0)}.normalize();
-			scene_tangents_temp.push(temp);
-			scene_tangents_temp.push(temp);
-			scene_tangents_temp.push(temp);
+			tangents_temp.push(temp);
+			tangents_temp.push(temp);
+			tangents_temp.push(temp);
 
 
 			let temp = Bitangent{bitangent:((f*(-delta_uv2.coord.0*edge1.position.0 - delta_uv1.coord.0*edge2.position.0))/255.0,
                                             (f*(-delta_uv2.coord.0*edge1.position.1 - delta_uv1.coord.0*edge2.position.1))/255.0,
                                             (f*(-delta_uv2.coord.0*edge1.position.2 - delta_uv1.coord.0*edge2.position.2))/255.0)}.normalize();
 
-			scene_bitangents_temp.push(temp);
-			scene_bitangents_temp.push(temp);
-			scene_bitangents_temp.push(temp);
+			bitangents_temp.push(temp);
+			bitangents_temp.push(temp);
+			bitangents_temp.push(temp);
 		}
-		
+		for _i in 0..(bitangents_temp.len()){
+			tangents.push(Tangent{ tangent: (0.0,0.0,0.0)});
+			bitangents.push(Bitangent{ bitangent: (0.0,0.0,0.0)});
+		}
+		for i in 0..indices.len(){
+			tangents[indices[i] as usize] += tangents_temp[indices[i] as usize];
+			bitangents[indices[i] as usize] += bitangents_temp[indices[i] as usize];
+		}
+		for i in 0..tangents.len(){
+			tangents[i] = tangents[i].normalize();
+			bitangents[i] = bitangents[i].normalize();
+		}
+		RenderObject{
+			vertex_buffer: vulkano::buffer::cpu_access::CpuAccessibleBuffer
+							::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), vertices.iter().cloned())
+							.expect("failed to create buffer"),
+			tangent_buffer:vulkano::buffer::cpu_access::CpuAccessibleBuffer
+							::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), tangents.iter().cloned())
+							.expect("failed to create buffer"),
+			bitangent_buffer:vulkano::buffer::cpu_access::CpuAccessibleBuffer
+							::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), bitangents.iter().cloned())
+							.expect("failed to create buffer"),
+			index_buffer:vulkano::buffer::cpu_access::CpuAccessibleBuffer
+							::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), indices.iter().cloned())
+							.expect("failed to create buffer"),
+			normal_buffer:vulkano::buffer::cpu_access::CpuAccessibleBuffer
+							::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), normals.iter().cloned())
+							.expect("failed to create buffer"),
+			texture_coords:vulkano::buffer::cpu_access::CpuAccessibleBuffer
+							::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), coords.iter().cloned())
+							.expect("failed to create buffer"),
+			texture_base: crate::init::load_texture(filepath.clone().to_owned()+"_Material_Basecolor.png", queue.clone()),
+			texture_normal: crate::init::load_texture(filepath.clone().to_owned()+"_Material_Normal.png", queue.clone()),
+		}
 	}	
 }
 
@@ -113,11 +146,11 @@ impl<T, U, V, W, X> FiveBuffersDefinition<T, U, V, W, X> {
 }
 
 unsafe impl<T, U, V, W, X, I> VertexDefinition<I> for FiveBuffersDefinition<T, U, V, W, X>
-    where T: Vertex,
-          U: Vertex,
-          V: Vertex,
-          W: Vertex,
-          X: Vertex,
+    where T: Pipevertex,
+          U: Pipevertex,
+          V: Pipevertex,
+          W: Pipevertex,
+          X: Pipevertex,
           I: ShaderInterfaceDef
 {
     type BuffersIter = VecIntoIter<(u32, usize, InputRate)>;
@@ -131,15 +164,15 @@ unsafe impl<T, U, V, W, X, I> VertexDefinition<I> for FiveBuffersDefinition<T, U
             for e in interface.elements() {
                 let name = e.name.as_ref().unwrap();
 
-                let (infos, buf_offset) = if let Some(infos) = <T as Vertex>::member(name) {
+                let (infos, buf_offset) = if let Some(infos) = <T as Pipevertex>::member(name) {
                     (infos, 0)
-                } else if let Some(infos) = <U as Vertex>::member(name) {
+                } else if let Some(infos) = <U as Pipevertex>::member(name) {
                     (infos, 1)
-                } else if let Some(infos) = <V as Vertex>::member(name) {
+                } else if let Some(infos) = <V as Pipevertex>::member(name) {
                     (infos, 2)
-                } else if let Some(infos) = <W as Vertex>::member(name) {
+                } else if let Some(infos) = <W as Pipevertex>::member(name) {
                     (infos, 3)
-                }else if let Some(infos) = <X as Vertex>::member(name) {
+                }else if let Some(infos) = <X as Pipevertex>::member(name) {
                     (infos, 4)
                 }else {
                     return Err(IncompatibleVertexDefinitionError::MissingAttribute {
@@ -185,11 +218,11 @@ unsafe impl<T, U, V, W, X, I> VertexDefinition<I> for FiveBuffersDefinition<T, U
 }
 
 unsafe impl<T, U, V, W, X> VertexSource<Vec<Arc<BufferAccess + Send + Sync>>> for FiveBuffersDefinition<T, U, V, W, X>
-    where T: Vertex,
-          U: Vertex,
-          V: Vertex,
-          W: Vertex,
-          X: Vertex
+    where T: Pipevertex,
+          U: Pipevertex,
+          V: Pipevertex,
+          W: Pipevertex,
+          X: Pipevertex
 {
     #[inline]
     fn decode(&self, source: Vec<Arc<BufferAccess + Send + Sync>>)
@@ -211,15 +244,15 @@ unsafe impl<T, U, V, W, X> VertexSource<Vec<Arc<BufferAccess + Send + Sync>>> fo
 }
 
 unsafe impl<'a, T, U, V, W, X, Bt, Bu, Bv, Bw, Bx> VertexSource<(Bt, Bu, Bv, Bw, Bx)> for FiveBuffersDefinition<T, U, V, W, X>
-    where T: Vertex,
+    where T: Pipevertex,
           Bt: TypedBufferAccess<Content = [T]> + Send + Sync + 'static,
-          U: Vertex,
+          U: Pipevertex,
           Bu: TypedBufferAccess<Content = [U]> + Send + Sync + 'static,
-          V: Vertex,
+          V: Pipevertex,
           Bv: TypedBufferAccess<Content = [V]> + Send + Sync + 'static,
-          W: Vertex,
+          W: Pipevertex,
           Bw: TypedBufferAccess<Content = [W]> + Send + Sync + 'static,
-          X: Vertex,
+          X: Pipevertex,
           Bx: TypedBufferAccess<Content = [X]> + Send + Sync + 'static
 {
     #[inline]

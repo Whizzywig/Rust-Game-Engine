@@ -23,7 +23,7 @@ fn main() {
 	let extensions = vulkano_win::required_extensions();
 	let instance = vulkano::instance::Instance::new(None, &extensions, None).expect("failed to create instance");
 	
-	let physical = vulkano::instance::PhysicalDevice::enumerate(&instace).next().expect("No device available");
+	let physical = vulkano::instance::PhysicalDevice::enumerate(&instance).next().expect("No device available");
 	println!("Using device: {} (type: {:?})", physical.name(), physical.ty());
 	
 	let mut events_loop = winit::EventsLoop::new();
@@ -38,7 +38,7 @@ fn main() {
 	
 	let device_ext = vulkano::device::DeviceExtensions {
 		khr_swapchain: true,
-		.. vulkano::DeviceExtensions::none()
+		.. vulkano::device::DeviceExtensions::none()
 	};
 	
 	let (device, mut queues) = vulkano::device::Device::new(physical, physical.supported_features(),
@@ -52,12 +52,12 @@ fn main() {
 		let format = caps.supported_formats[0].0;
 		let alpha = caps.supported_composite_alpha.iter().next().unwrap();
 		vulkano::swapchain::Swapchain::new(device.clone(), surface.clone(), caps.min_image_count, format, dimensions, 1,
-		vulkano::swapchain::SirfaceTransform::Identity, alpha, vulkano::swapchain::PresentMode::Fifo, true, None).expect(
+		usage, &queue, vulkano::swapchain::SurfaceTransform::Identity, alpha, vulkano::swapchain::PresentMode::Fifo, true, None).expect(
 		"Failed to create swapchain")
 	};
 	
 	let filepath = "src/bencube/bencube";
-	let filepath2 = "src/texturedmodel/maps/Low";
+	let filepath2 = "src/texturedmodel/Low";
 	
 	let sampler = vulkano::sampler::Sampler::new(device.clone(), vulkano::sampler::Filter::Linear,
 			vulkano::sampler::Filter::Linear, vulkano::sampler::MipmapMode::Nearest,
@@ -66,8 +66,8 @@ fn main() {
 	
 	let mut depth_buffer = vulkano::image::attachment::AttachmentImage::transient(device.clone(),dimensions, vulkano::format::D16Unorm).unwrap();
 	
-	let position = cgmath:Matrix4::from_translation(cgmath::vec3(0.0,0.0,0.0));
-	let pos2 = cgmath:Matrix4::from_translation(cgmath::vec3(0.0,-1.0,0.0));
+	let position = cgmath::Matrix4::from_translation(cgmath::vec3(0.0,0.0,0.0));
+	let pos2 = cgmath::Matrix4::from_translation(cgmath::vec3(0.0,-1.0,0.0));
 	
 	let mut static_meshes = Vec::new();
 	let mut meshes = Vec::new();
@@ -122,7 +122,7 @@ fn main() {
 	let mut recreate_swapchain = false;
 
     let mut previous_frame = Box::new(vulkano::sync::now(device.clone())) as Box<GpuFuture>;
-    let rotation_start = std::time::Instant::now();
+    let start = std::time::Instant::now();
 
     let mut dynamic_state = vulkano::command_buffer::DynamicState {
         line_width: None,
@@ -146,8 +146,8 @@ fn main() {
 		previous_frame.cleanup_finished();
 		
 		previous_time = elapsed_time.clone();
-		elapsed_time = start.elapsed(0.as_secs as f64 + (start.elapsed().subsec_millis() as f64/1000.0) as f64;
-		delta_time = (elapsed_time-previous_time) as f32
+		elapsed_time = start.elapsed().as_secs() as f64 + (start.elapsed().subsec_millis() as f64/1000.0) as f64;
+		delta_time = (elapsed_time-previous_time) as f32;
 		count = count % 30;
 		if count == 1{
 			println!{"FPS: {}", 1.0/delta_time};
@@ -156,7 +156,7 @@ fn main() {
 		
 		if (key_xy.x != 0.0) || (key_xy.y != 0.0) {
 			camera.move_by({
-				let move_amount = key_xy.clone();.get_normalized();
+				let move_amount = key_xy.clone().get_normalized();
 				let mut forward = math::normalize(camera.get_forward());
 				forward = [(forward[0]*move_amount[0]*velocity*delta_time),
 				(forward[1]*move_amount[0]*velocity*delta_time),
@@ -224,7 +224,7 @@ fn main() {
 				uniform_buffer.next(uniform_data).unwrap()
 			});
 		}
-		let mut niform_buffers_subbuffers = Vec::new();
+		let mut uniform_buffers_subbuffers = Vec::new();
 		for i in 0..meshes.len(){
 			uniform_buffers_subbuffers.push({
 				let uniform_data = vs::ty::Data {
@@ -240,13 +240,13 @@ fn main() {
 		for i in 0..static_meshes.len(){
 			static_sets.push(Arc::new(vulkano::descriptor::descriptor_set::PersistentDescriptorSet::start(pipeline.clone(), 0)
             .add_buffer(static_uniform_buffers_subbuffers[i].clone()).unwrap().add_sampled_image(static_meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap().add_sampled_image(static_meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
-            .build().unwrap())
+            .build().unwrap()));
 		}
 		let mut sets = Vec::new();
 		for i in 0..meshes.len(){
 			sets.push(Arc::new(vulkano::descriptor::descriptor_set::PersistentDescriptorSet::start(pipeline.clone(), 0)
             .add_buffer(uniform_buffers_subbuffers[i].clone()).unwrap().add_sampled_image(meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap().add_sampled_image(meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
-            .build().unwrap())
+            .build().unwrap()));
 		}
 		let (image_num, acquire_future) = match vulkano::swapchain::acquire_next_image(swapchain.clone(),
                                                                                        None) {
@@ -271,7 +271,7 @@ fn main() {
 					temp = temp.draw_indexed(
 					pipeline.clone(),
 					&dynamic_state,
-					(static_meshes[i].render_object.vertex_buffer.clone(), static_meshes[i].render_object.normals_buffer.clone(), static_meshes[i].render_object.texture_coords.clone(), static_meshes[i].render_object.tangent_buffer.clone(), static_meshes[i].render_object.bitangent_buffer.clone()),    // , texcoords_buffer.clone() Need to fix the pipeline first to accept a third input
+					(static_meshes[i].render_object.vertex_buffer.clone(), static_meshes[i].render_object.normal_buffer.clone(), static_meshes[i].render_object.texture_coords.clone(), static_meshes[i].render_object.tangent_buffer.clone(), static_meshes[i].render_object.bitangent_buffer.clone()),    // , texcoords_buffer.clone() Need to fix the pipeline first to accept a third input
 					static_meshes[i].render_object.index_buffer.clone(), static_sets[i].clone(), ()).unwrap()
 		
 				}
@@ -280,7 +280,7 @@ fn main() {
 				temp = temp.draw_indexed(
 				pipeline.clone(),
 				&dynamic_state,
-				(meshes[i].render_object.vertex_buffer.clone(), meshes[i].render_object.normals_buffer.clone(), meshes[i].render_object.texture_coords.clone(), meshes[i].render_object.tangent_buffer.clone(), meshes[i].render_object.bitangent_buffer.clone()),    // , texcoords_buffer.clone() Need to fix the pipeline first to accept a third input
+				(meshes[i].render_object.vertex_buffer.clone(), meshes[i].render_object.normal_buffer.clone(), meshes[i].render_object.texture_coords.clone(), meshes[i].render_object.tangent_buffer.clone(), meshes[i].render_object.bitangent_buffer.clone()),    // , texcoords_buffer.clone() Need to fix the pipeline first to accept a third input
 				meshes[i].render_object.index_buffer.clone(), sets[i].clone(), ()).unwrap()
 				
 			}
@@ -416,14 +416,14 @@ fn main() {
 							camera.set_lookat(change.clone());
 						}
 						if global_focused {
-							surface.window().set_cursor_position(sentre).expect("Failed to centre cursor");
+							surface.window().set_cursor_position(centre).expect("Failed to centre cursor");
 						}
 					}
-				),winit::Event::WindowEvent{event: winit:WindowEvent::MouseInput {button: winit::MouseButton::Middle, state: winit::ElementState::Released, ..}, ..}=> {
-					camera.set_lookat([meshes[0].position.w.x,meshes[0].position.w.y,meshes[0].position.w.z]);
-					camera.locked = !camera.locked;
-				
-				}
+				),winit::Event::WindowEvent{event: winit::WindowEvent::MouseInput {button: winit::MouseButton::Middle, state: winit::ElementState::Released, ..}, ..}=> (
+					{
+						camera.set_lookat([meshes[0].position.w.x, meshes[0].position.w.y, meshes[0].position.w.z]);
+						camera.locked = !camera.locked;
+					}
 				),
                 _ => ()
             }
