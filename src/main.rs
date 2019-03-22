@@ -12,7 +12,7 @@ extern crate tobj;
 use vulkano_win::VkSurfaceBuild;
 use vulkano::sync::GpuFuture;
 
-
+use std::thread;
 use std::sync::Arc;
 
 mod support;
@@ -71,9 +71,15 @@ fn main() {
 
     let mut static_meshes:Vec<crate::support::object::StaticMesh> = Vec::new();
     let mut meshes = Vec::new();
+    //TODO: test preformance of this and then implement better
+    let queue1 = queue.clone();
+    let device1 = device.clone();
+    let load1 = thread::spawn(move || {
+        support::object::StaticMesh::new(filepath, position, queue1, device1)
+    });
 
-    static_meshes.push(support::object::StaticMesh::new(filepath, position, queue.clone(), device.clone()));
     meshes.push(support::object::Mesh::new("Player".to_string(),filepath2, pos2, queue.clone(), device.clone()));
+    static_meshes.push(load1.join().unwrap());
 
     let mut proj = cgmath::perspective(cgmath::Rad(std::f32::consts::FRAC_PI_4), {dimensions[0] as f32 / dimensions[1] as f32 }, 0.01, 100.0);
     let mut camera = support::camera::Camera::new((0.0,0.0,-1.0), (0.0,0.0,0.0));
@@ -139,7 +145,7 @@ fn main() {
     let mut elapsed_time:f64 = start.elapsed().as_secs() as f64;
     let mut previous_time:f64;
     #[allow(unused_mut)]
-        let mut velocity = 1.0;
+    let mut velocity = 1.0;
     let mut key_xy = support::camera::Keys {x:0.0, y:0.0};
 
     let mut count = 0;
