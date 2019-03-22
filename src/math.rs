@@ -34,6 +34,13 @@ pub struct Bitangent {
 }
 impl_vertex!(Bitangent, bitangent);
 
+impl Normal {
+	pub fn normalize(mut self) -> Normal{
+		let length = ((self.normal.0 * self.normal.0)+(self.normal.1 * self.normal.1)+(self.normal.2 * self.normal.2)).sqrt();
+		self = self/length;
+		return self;
+	}
+}
 impl Tangent {
 	pub fn normalize(mut self) -> Tangent{
 		let length = ((self.tangent.0 * self.tangent.0)+(self.tangent.1 * self.tangent.1)+(self.tangent.2 * self.tangent.2)).sqrt();
@@ -49,6 +56,13 @@ impl Bitangent {
 	}
 }
 
+impl AddAssign for Normal {
+	fn add_assign(&mut self, rhs :Self){
+		*self = Normal{ normal:((self.normal.0 + rhs.normal.0),
+									  (self.normal.1 + rhs.normal.1),
+									  (self.normal.2 + rhs.normal.2))};
+	}
+}
 impl AddAssign for Bitangent {
 	fn add_assign(&mut self, rhs :Self){
 		*self = Bitangent{ bitangent:((self.bitangent.0 + rhs.bitangent.0),
@@ -63,7 +77,21 @@ impl AddAssign for Tangent {
 		(self.tangent.2 + rhs.tangent.2))};
 	}
 }
-
+impl Div for Normal {
+	type Output = Normal;
+	fn div(self, rhs :Normal) -> Normal {
+		Normal{ normal:((self.normal.0 / rhs.normal.0),
+							  (self.normal.1 / rhs.normal.1),(self.normal.2 / rhs.normal.2))}
+	}
+}
+impl Div<f32> for Normal {
+	type Output = Normal;
+	fn div(self, rhs: f32) -> Normal {
+		Normal{ normal:((self.normal.0 / rhs),
+							  (self.normal.1 / rhs),
+							  (self.normal.2 / rhs))}
+	}
+}
 impl Div for Bitangent {
 	type Output = Bitangent;
 	fn div(self, rhs :Bitangent) -> Bitangent {

@@ -17,7 +17,7 @@ pub fn load_texture(path:String, queue:Arc<vulkano::device::Queue>) -> Arc<vulka
 	file.read_to_end(&mut buffer).expect("Failed to read into buffer");
 	let dim = match imagesize::size(path) {
 		Ok(dim) => dim,
-		Err(why) => panic!("Erroe getting size: {:?}", why)
+		Err(why) => panic!("Error getting size: {:?}", why)
 	};
 	let image = image::load_from_memory_with_format(&buffer, image::ImageFormat::PNG).unwrap().to_rgba();
     let image_data = image.into_raw().clone();

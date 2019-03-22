@@ -50,6 +50,7 @@ impl RenderObject{
 		let mut bitangents_temp:Vec<Bitangent> = Vec::new();
 		let mut bitangents:Vec<Bitangent> = Vec::new();
 		let mut coords:Vec<Texcoord> = Vec::new();
+        let mut normals_temp:Vec<Normal> = Vec::new();
 		let mut normals:Vec<Normal> = Vec::new();
 		let mut indices = Vec::new();
 		
@@ -65,7 +66,7 @@ impl RenderObject{
 			vertices.push(Vertex{ position:(mesh.positions[i*3],
 					mesh.positions[(i*3)+1],
 					mesh.positions[(i*3)+2])});
-			normals.push(Normal{ normal: (mesh.normals[i*3],
+			normals_temp.push(Normal{ normal: (mesh.normals[i*3],
 					mesh.normals[(i*3)+1],
 					mesh.normals[(i*3)+2])});
 			coords.push(Texcoord { coord: (mesh.texcoords[i*2],
@@ -97,14 +98,17 @@ impl RenderObject{
 			bitangents_temp.push(temp);
 		}
 		for _i in 0..(bitangents_temp.len()){
+            normals.push( Normal{ normal: (0.0,0.0,0.0)});
 			tangents.push(Tangent{ tangent: (0.0,0.0,0.0)});
 			bitangents.push(Bitangent{ bitangent: (0.0,0.0,0.0)});
 		}
 		for i in 0..indices.len(){
+            normals[indices[i] as usize] += normals_temp[indices[i] as usize];
 			tangents[indices[i] as usize] += tangents_temp[indices[i] as usize];
 			bitangents[indices[i] as usize] += bitangents_temp[indices[i] as usize];
 		}
 		for i in 0..tangents.len(){
+            normals[i] = normals[i].normalize();
 			tangents[i] = tangents[i].normalize();
 			bitangents[i] = bitangents[i].normalize();
 		}
