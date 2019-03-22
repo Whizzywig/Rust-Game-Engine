@@ -69,7 +69,7 @@ fn main() {
 	let position = cgmath::Matrix4::from_translation(cgmath::vec3(0.0,0.0,0.0));
 	let pos2 = cgmath::Matrix4::from_translation(cgmath::vec3(0.0,-1.0,0.0));
 	
-	let mut static_meshes = Vec::new();
+	let mut static_meshes:Vec<crate::support::object::StaticMesh> = Vec::new();
 	let mut meshes = Vec::new();
 	
 	static_meshes.push(support::object::StaticMesh::new(filepath, position, queue.clone(), device.clone()));
@@ -108,6 +108,8 @@ fn main() {
             }
         ).unwrap()
     );
+	//seems to crash here something about a missing bitangent attribute
+	//happens at an err value from the unwrap
 	let pipeline = Arc::new(vulkano::pipeline::GraphicsPipeline::start()
         .vertex_input(support::FiveBuffersDefinition::new())
         .vertex_shader(vs.main_entry_point(), ())
