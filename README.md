@@ -1,7 +1,7 @@
 "# Rust-Game-Engine" 
 Todo:
 - [x] restore support
-- [ ] restore shaders
+- [x] restore shaders
 - [ ] restructure code base
 - [ ] transistion to ECS
 - [ ] implement player class
