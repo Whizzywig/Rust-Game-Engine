@@ -60,8 +60,9 @@ fn main() {
             .expect("Failed to create swapchain")
     };
 
-    let filepath = "src/bencube/bencube";
+    //let filepath = "src/bencube/bencube";
     let filepath2 = "src/texturedmodel/Low";
+    let filepath = "src/texturedmodel/Low";
 
     let sampler = vulkano::sampler::Sampler::new(device.clone(), vulkano::sampler::Filter::Linear,
                                                  vulkano::sampler::Filter::Linear, vulkano::sampler::MipmapMode::Nearest,
@@ -265,6 +266,9 @@ fn main() {
                 .add_buffer(static_uniform_buffers_subbuffers[i].clone()).unwrap()
                 .add_sampled_image(static_meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap()
                 .add_sampled_image(static_meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_metallic.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_roughness.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_ao.clone(),sampler.clone()).unwrap()
                 .build().unwrap()));
         }
         let mut sets = Vec::new();
@@ -273,6 +277,9 @@ fn main() {
                 .add_buffer(uniform_buffers_subbuffers[i].clone()).unwrap()
                 .add_sampled_image(meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap()
                 .add_sampled_image(meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_metallic.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_roughness.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_ao.clone(),sampler.clone()).unwrap()
                 .build().unwrap()));
         }
 
