@@ -29,7 +29,7 @@ use crate::math::Vertex;
 
 pub mod camera;
 pub mod object;
-
+//TODO:move to a better location in code and redefine as a component
 #[allow(dead_code)]
 pub struct RenderObject{
 	pub vertex_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Vertex]>>,

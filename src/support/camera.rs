@@ -1,5 +1,6 @@
 extern crate cgmath;
 
+//TODO:Convert to entity
 #[derive(Copy, Clone)]
 #[allow(dead_code)]
 pub struct Camera {
@@ -56,6 +57,7 @@ impl Camera {
 		self.locked
 	}
 }
+//TODO: merge this with a better movement system
 #[derive(Copy, Clone)]
 pub struct Keys{
 	pub x: f32,

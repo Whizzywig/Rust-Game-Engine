@@ -122,11 +122,12 @@ impl Div<f32> for Tangent {
 		(self.tangent.2 / rhs))}
 	}
 }
-
+//TODO: rewrite as an abstract to then be easy to implement into types
 pub fn normalize(input:[f32; 3])-> [f32; 3] {
 	let length = ((input[0] * input[0])+(input[1] * input[1])+(input[2] * input[2])).sqrt();
 	return [input[0]/length, input[1]/length, input[2]/length];
 }
+//This is only used once but should be optimised
 pub fn vector_matrix_mul(vector: [f32; 3], matrix: cgmath::Matrix3<f32>) -> [f32; 3] {
 	[(vector[0]*matrix.x.x)+(vector[1]*matrix.x.y)+(vector[2]*matrix.x.z),
 	(vector[0]*matrix.y.x)+(vector[1]*matrix.y.y)+(vector[2]*matrix.y.z),

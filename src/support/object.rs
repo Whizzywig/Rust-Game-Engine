@@ -3,7 +3,7 @@ extern crate cgmath;
 use std::sync::Arc;
 use vulkano::device::Device;
 use vulkano::device::Queue;
-
+//TODO: Move all of this into entities and components
 #[allow(dead_code)]
 pub struct StaticMesh{
 	pub render_object: crate::support::RenderObject,

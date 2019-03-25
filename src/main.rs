@@ -27,6 +27,7 @@ fn main() {
     println!("Using device: {} (type: {:?})", physical.name(), physical.ty());
 
     let mut events_loop = winit::EventsLoop::new();
+    //sets up the window
     let surface = winit::WindowBuilder::new().build_vk_surface(&events_loop, instance.clone()).unwrap();
     surface.window().grab_cursor(true).expect("Failed to grab cursor");
     surface.window().hide_cursor(true);
@@ -45,15 +46,18 @@ fn main() {
                                                             &device_ext, [(queue_family, 0.5)].iter().cloned()).expect("failed to create device");
     let queue = queues.next().unwrap();
 
+    //Create swapchain
     let (mut swapchain, mut images) = {
         let caps = surface.capabilities(physical).expect("failed to get surface capabilities");
         dimensions = caps.current_extent.unwrap_or([1024,768]);
         let usage = caps.supported_usage_flags;
         let format = caps.supported_formats[0].0;
         let alpha = caps.supported_composite_alpha.iter().next().unwrap();
-        vulkano::swapchain::Swapchain::new(device.clone(), surface.clone(), caps.min_image_count, format, dimensions, 1,
-                                           usage, &queue, vulkano::swapchain::SurfaceTransform::Identity, alpha, vulkano::swapchain::PresentMode::Fifo, true, None).expect(
-            "Failed to create swapchain")
+        vulkano::swapchain::Swapchain::new(device.clone(), surface.clone(),
+                                           caps.min_image_count, format, dimensions, 1,
+                                           usage, &queue, vulkano::swapchain::SurfaceTransform::Identity,
+                                           alpha, vulkano::swapchain::PresentMode::Fifo, true, None)
+            .expect("Failed to create swapchain")
     };
 
     let filepath = "src/bencube/bencube";
@@ -78,10 +82,13 @@ fn main() {
         support::object::StaticMesh::new(filepath, position, queue1, device1)
     });
 
-    meshes.push(support::object::Mesh::new("Player".to_string(),filepath2, pos2, queue.clone(), device.clone()));
+    meshes.push(support::object::Mesh::new("Player".to_string(),filepath2,
+                                           pos2, queue.clone(), device.clone()));
     static_meshes.push(load1.join().unwrap());
 
-    let mut proj = cgmath::perspective(cgmath::Rad(std::f32::consts::FRAC_PI_4), {dimensions[0] as f32 / dimensions[1] as f32 }, 0.01, 100.0);
+    //setup the camera data
+    let mut proj = cgmath::perspective(cgmath::Rad(std::f32::consts::FRAC_PI_4),
+                                       {dimensions[0] as f32 / dimensions[1] as f32 }, 0.01, 100.0);
     let mut camera = support::camera::Camera::new((0.0,0.0,-1.0), (0.0,0.0,0.0));
     let scale_amount:f32 = 0.25;
     let scale = cgmath::Matrix4::from_scale(scale_amount);
@@ -89,6 +96,7 @@ fn main() {
     let uniform_buffer = vulkano::buffer::cpu_pool::CpuBufferPool::<vs::ty::Data>
     ::new(device.clone(), vulkano::buffer::BufferUsage::all());
 
+    //load vertex and fragment shader
     let vs = vs::Shader::load(device.clone()).expect("failed to create shader module");
     let fs = fs::Shader::load(device.clone()).expect("failed to create shader module");
 
@@ -114,8 +122,9 @@ fn main() {
             }
         ).unwrap()
     );
-    //seems to crash here something about a missing bitangent attribute
-    //happens at an err value from the unwrap
+
+    //This will crash if the shader file isn't correct e.g. input not defined via the impl vertex macro
+    //TODO:future proof this. Allow for more renderpasses for e.g. post processing
     let pipeline = Arc::new(vulkano::pipeline::GraphicsPipeline::start()
         .vertex_input(support::FiveBuffersDefinition::new())
         .vertex_shader(vs.main_entry_point(), ())
@@ -126,10 +135,12 @@ fn main() {
         .render_pass(vulkano::framebuffer::Subpass::from(renderpass.clone(), 0).unwrap())
         .build(device.clone())
         .unwrap());
+
     let mut framebuffers: Option<Vec<Arc<vulkano::framebuffer::Framebuffer<_,_>>>> = None;
     let mut recreate_swapchain = false;
 
     let mut previous_frame = Box::new(vulkano::sync::now(device.clone())) as Box<GpuFuture>;
+    //defines programs start for delta time operations
     let start = std::time::Instant::now();
 
     let mut dynamic_state = vulkano::command_buffer::DynamicState {
@@ -141,9 +152,11 @@ fn main() {
         }]),
         scissors: None,
     };
+    //Defines the delta time variables
     let mut delta_time:f32;
     let mut elapsed_time:f64 = start.elapsed().as_secs() as f64;
     let mut previous_time:f64;
+    //should be moved to camera object/entity
     #[allow(unused_mut)]
     let mut velocity = 1.0;
     let mut key_xy = support::camera::Keys {x:0.0, y:0.0};
@@ -152,16 +165,17 @@ fn main() {
     let mut global_focused = false;
     loop {
         previous_frame.cleanup_finished();
-
+        //delta time calculations
         previous_time = elapsed_time.clone();
         elapsed_time = start.elapsed().as_secs() as f64 + (start.elapsed().subsec_millis() as f64/1000.0) as f64;
         delta_time = (elapsed_time-previous_time) as f32;
+        //fps counter only print every 30 to save time
         count = count % 30;
         if count == 1{
             println!{"FPS: {}", 1.0/delta_time};
         }
         count += 1;
-
+        //should move to movement system
         if (key_xy.x != 0.0) || (key_xy.y != 0.0) {
             camera.move_by({
                 let move_amount = key_xy.clone().get_normalized();
@@ -176,15 +190,15 @@ fn main() {
                 [forward[0]+side[0],forward[1]+side[1],forward[2]+side[2]]
             });
             if camera.get_locked() {
-                camera.set_lookat([meshes[0].position.w.x,meshes[0].position.w.y,meshes[0].position.w.z]);
+                camera.set_lookat([meshes[0].position.w.x,
+                    meshes[0].position.w.y,
+                    meshes[0].position.w.z]);
             }
         }
         if recreate_swapchain {
-
             dimensions = surface.capabilities(physical)
                 .expect("failed to get surface capabilities")
                 .current_extent.unwrap_or([1024, 768]);
-
             let (new_swapchain, new_images) = match swapchain.recreate_with_dimension(dimensions) {
                 Ok(r) => r,
                 Err(vulkano::swapchain::SwapchainCreationError::UnsupportedDimensions) => {
@@ -199,7 +213,8 @@ fn main() {
             depth_buffer = vulkano::image::attachment::AttachmentImage::transient(device.clone(), dimensions, vulkano::format::D16Unorm).unwrap();
 
             framebuffers = None;
-
+            //update the projection matrix to account for window resizing
+            //TODO: move to camera entity
             proj = cgmath::perspective(cgmath::Rad(std::f32::consts::FRAC_PI_2), { dimensions[0] as f32 / dimensions[1] as f32 }, 0.01, 100.0);
 
             dynamic_state.viewports = Some(vec![vulkano::pipeline::viewport::Viewport {
@@ -207,7 +222,6 @@ fn main() {
                 dimensions: [dimensions[0] as f32, dimensions[1] as f32],
                 depth_range: 0.0 .. 1.0,
             }]);
-
             recreate_swapchain = false;
         }
 
@@ -219,7 +233,8 @@ fn main() {
                     .build().unwrap())
             }).collect::<Vec<_>>());
         }
-
+        //TODO: Move to render system
+        //This prepares the data for each object that needs to be rendered for the renderpass
         let mut static_uniform_buffers_subbuffers = Vec::new();
         for i in 0..static_meshes.len(){
             static_uniform_buffers_subbuffers.push({
@@ -247,15 +262,20 @@ fn main() {
         let mut static_sets = Vec::new();
         for i in 0..static_meshes.len(){
             static_sets.push(Arc::new(vulkano::descriptor::descriptor_set::PersistentDescriptorSet::start(pipeline.clone(), 0)
-                .add_buffer(static_uniform_buffers_subbuffers[i].clone()).unwrap().add_sampled_image(static_meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap().add_sampled_image(static_meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
+                .add_buffer(static_uniform_buffers_subbuffers[i].clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
                 .build().unwrap()));
         }
         let mut sets = Vec::new();
         for i in 0..meshes.len(){
             sets.push(Arc::new(vulkano::descriptor::descriptor_set::PersistentDescriptorSet::start(pipeline.clone(), 0)
-                .add_buffer(uniform_buffers_subbuffers[i].clone()).unwrap().add_sampled_image(meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap().add_sampled_image(meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
+                .add_buffer(uniform_buffers_subbuffers[i].clone()).unwrap()
+                .add_sampled_image(meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
                 .build().unwrap()));
         }
+
         let (image_num, acquire_future) = match vulkano::swapchain::acquire_next_image(swapchain.clone(),
                                                                                        None) {
             Ok(r) => r,
