@@ -123,7 +123,6 @@ fn main() {
             }
         ).unwrap()
     );
-
     //This will crash if the shader file isn't correct e.g. input not defined via the impl vertex macro
     //TODO:future proof this. Allow for more renderpasses for e.g. post processing
     let pipeline = Arc::new(vulkano::pipeline::GraphicsPipeline::start()
@@ -173,8 +172,9 @@ fn main() {
         //fps counter only print every 30 to save time
         count = count % 30;
         if count == 1{
-            println!{"FPS: {}", 1.0/delta_time};
+            //println!{"FPS: {}", 1.0/delta_time};
         }
+
         count += 1;
         //should move to movement system
         if (key_xy.x != 0.0) || (key_xy.y != 0.0) {

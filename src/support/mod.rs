@@ -38,7 +38,7 @@ pub struct RenderObject{
 	pub normal_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Normal]>>,
 	pub texture_base:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
 	pub texture_normal:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
-    pub texture_metalic:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
+    pub texture_metallic:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
     pub texture_roughness:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
     pub texture_ao:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
 	pub texture_coords:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Texcoord]>>,
@@ -134,9 +134,9 @@ impl RenderObject{
 			texture_coords:vulkano::buffer::cpu_access::CpuAccessibleBuffer
 							::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), coords.iter().cloned())
 							.expect("failed to create buffer"),
-			texture_base: crate::init::load_texture(filepath.clone().to_owned()+"_Material_Basecolor.png", queue.clone()),
+			texture_base: crate::init::load_texture(filepath.clone().to_owned()+"_Material_BaseColor.png", queue.clone()),
 			texture_normal: crate::init::load_texture(filepath.clone().to_owned()+"_Material_Normal.png", queue.clone()),
-            texture_metalic:crate::init::load_texture(filepath.clone().to_owned()+"_Material_Metallic.png", queue.clone()),
+            texture_metallic:crate::init::load_texture(filepath.clone().to_owned()+"_Material_Metallic.png", queue.clone()),
             texture_roughness:crate::init::load_texture(filepath.clone().to_owned()+"_Material_Roughness.png", queue.clone()),
             texture_ao:crate::init::load_texture(filepath.clone().to_owned()+"_Material_Ambient-occlusion.png", queue.clone()),
 		}

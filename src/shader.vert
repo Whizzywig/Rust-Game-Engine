@@ -5,12 +5,9 @@ layout(location = 2) in vec2 coord;
 layout(location = 3) in vec3 tangent;
 layout(location = 4) in vec3 bitangent;
 
-layout(location = 0) out vec3 FragPos;
-layout(location = 1) out vec2 TexCoords;
-layout(location = 2) out vec3 TangentLightPos;
-layout(location = 3) out vec3 TangentViewPos;
-layout(location = 4) out vec3 TangentFragPos;
-layout(location = 5) out mat3 TBN;
+layout(location = 0) out vec2 TexCoords;
+layout(location = 1) out vec3 WorldPos;
+layout(location = 2) out vec3 Normal;
 layout(set = 0, binding = 0) uniform Data {
     mat4 world;
     mat4 view;
@@ -18,18 +15,9 @@ layout(set = 0, binding = 0) uniform Data {
     vec3 camera;
 } uniforms;
 void main() {
-    FragPos = vec3(uniforms.world * vec4(position, 1.0));
     TexCoords = coord;
-
-    mat3 normalMatrix = transpose(inverse(mat3(uniforms.world)));
-    vec3 T = normalize(normalMatrix * tangent);
-    vec3 N = normalize(normalMatrix * normal);
-    vec3 B = cross(N,T);
-    mat3 TBN = transpose(mat3(T,B,N));
-
-    TangentLightPos = TBN * uniforms.camera;
-    TangentViewPos = TBN * uniforms.camera;
-    TangentFragPos = TBN * FragPos;
+    WorldPos = vec3(uniforms.world * vec4(position, 1.0));
+    Normal = mat3(uniforms.world) * normal;
 
     gl_Position = uniforms.proj * uniforms.view * uniforms.world * vec4(position, 1.0);
     gl_Position.y = -gl_Position.y;
