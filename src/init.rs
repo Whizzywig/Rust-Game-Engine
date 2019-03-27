@@ -10,7 +10,7 @@ pub fn load_texture(path:String, queue:Arc<vulkano::device::Queue>) -> Arc<vulka
 	let mut file = match file {
 		Ok(file) => file,
 		Err(error) => {
-			panic!("There was a problem opening the file: {:?}", error)
+			panic!("There was a problem opening the file: {} with error:{:?}`", &path,error)
 		},
 	};
 	let mut buffer = Vec::new();

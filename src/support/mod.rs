@@ -131,7 +131,7 @@ impl RenderObject{
 			texture_coords:vulkano::buffer::cpu_access::CpuAccessibleBuffer
 							::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), coords.iter().cloned())
 							.expect("failed to create buffer"),
-			texture_base: crate::init::load_texture(filepath.clone().to_owned()+"_Material_Basecolor.png", queue.clone()),
+			texture_base: crate::init::load_texture(filepath.clone().to_owned()+"_Material_BaseColor.png", queue.clone()),
 			texture_normal: crate::init::load_texture(filepath.clone().to_owned()+"_Material_Normal.png", queue.clone()),
 		}
 	}	
