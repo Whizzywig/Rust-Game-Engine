@@ -1,6 +1,6 @@
 [package]
-name = "vulkano-tobj-testing"
-version = "0.1.0"
+name = "Rust_Game_engine"
+version = "0.1.1"
 authors = ["Whizzywig <whizzywig.rockley@gmail.com>"]
 edition = "2018"
 
@@ -8,9 +8,9 @@ edition = "2018"
 cgmath = "0.16.1"
 image = "0.20.0"
 imagesize = "0.6.0"
-winit = "0.17"
+winit = "0.18"
 time = "0.1.38"
-vulkano = "0.10.0"
-vulkano-win = "0.10.0"
-vulkano-shader-derive = "0.10.0"
+vulkano = "0.11"
+vulkano-win = "0.11"
+vulkano-shaders = "0.11.1"
 tobj = "0.1.6"

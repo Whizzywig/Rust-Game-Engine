@@ -1,15 +1,17 @@
+#[macro_use]
+extern crate vulkano;
+extern crate vulkano_shaders;
+
+extern crate vulkano_win;
+extern crate tobj;
+
 extern crate cgmath;
 extern crate winit;
 extern crate time;
 
-#[macro_use]
-extern crate vulkano;
-#[macro_use]
-extern crate vulkano_shader_derive;
-extern crate vulkano_win;
-extern crate tobj;
-
 use vulkano_win::VkSurfaceBuild;
+use winit::EventsLoop;
+use winit::WindowBuilder;
 use vulkano::sync::GpuFuture;
 
 use std::thread;
@@ -21,14 +23,17 @@ mod init;
 
 fn main() {
     let extensions = vulkano_win::required_extensions();
-    let instance = vulkano::instance::Instance::new(None, &extensions, None).expect("failed to create instance");
+    let instance = {
+        let extensions = vulkano_win::required_extensions();
+        vulkano::instance::Instance::new(None, &extensions, None).expect("failed to create Vulkan instance")
+    };
 
     let physical = vulkano::instance::PhysicalDevice::enumerate(&instance).next().expect("No device available");
     println!("Using device: {} (type: {:?})", physical.name(), physical.ty());
 
-    let mut events_loop = winit::EventsLoop::new();
+    let mut events_loop = EventsLoop::new();
     //sets up the window
-    let surface = winit::WindowBuilder::new().build_vk_surface(&events_loop, instance.clone()).unwrap();
+    let surface = WindowBuilder::new().build_vk_surface(&events_loop, instance.clone()).unwrap();
     surface.window().grab_cursor(true).expect("Failed to grab cursor");
     surface.window().hide_cursor(true);
 
@@ -468,18 +473,14 @@ fn main() {
     }
 }
 mod vs {
-    #[derive(VulkanoShader)]
-    #[ty = "vertex"]
-    #[path = "src/shader.vert"]
-
-    #[allow(dead_code)]
-    struct Dummy;
+    vulkano_shaders::shader!{
+        ty: "vertex",
+        path: "src/shader.vert"
+    }
 }
 mod fs {
-    #[derive(VulkanoShader)]
-    #[ty = "fragment"]
-    #[path = "src/shader.frag"]
-
-    #[allow(dead_code)]
-    struct Dummy;
+    vulkano_shaders::shader!{
+        ty: "fragment",
+        path: "src/shader.frag"
+    }
 }

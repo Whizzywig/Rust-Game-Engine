@@ -32,6 +32,9 @@ vec3 getNormalFromMap()
     vec3 N   = normalize(Normal);
     vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
     vec3 B  = -normalize(cross(N, T));
+
+    T = normalize(T - N * dot(N,T));
+
     mat3 TBN = mat3(T, B, N);
 
     return normalize(TBN * tangentNormal);
@@ -92,9 +95,9 @@ void main() {
     vec3 Lo = vec3(0.0);
 
     // calculate per-light radiance
-    vec3 L = normalize(uniforms.camera - WorldPos);
+    vec3 L = normalize(vec3(0.0, -1.0 , 1.0) - WorldPos);//vec was uniforms.camera
     vec3 H = normalize(V + L);
-    float distance = length(uniforms.camera - WorldPos);
+    float distance = length(vec3(0.0, -1.0 , 1.0) - WorldPos);//vec was uniforms.camera
     float attenuation = 1.0 / (distance * distance);
     vec3 radiance = vec3(1.0,1.0,1.0) * attenuation;
 
@@ -127,7 +130,11 @@ void main() {
 
     // ambient lighting (note that the next IBL tutorial will replace
     // this ambient lighting with environment lighting).
+<<<<<<< HEAD
     vec3 ambient = vec3(0.1) * albedo * ao;
+=======
+    vec3 ambient = vec3(0.01) * albedo * ao;
+>>>>>>> 6834152f151369140d96c8afabd33ab8ea9a4c82
 
     vec3 color = ambient + Lo;
 
