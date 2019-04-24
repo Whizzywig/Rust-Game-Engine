@@ -32,6 +32,7 @@ fn main() {
     surface.window().grab_cursor(true).expect("Failed to grab cursor");
     surface.window().hide_cursor(true);
 
+
     let mut dimensions;
 
     let queue_family = physical.queue_families().find(|&q| q.supports_graphics() &&
