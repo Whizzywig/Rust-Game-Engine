@@ -6,6 +6,7 @@ use std::path::Path;
 
 extern crate vulkano;
 extern crate tobj;
+extern crate gltf;
 
 use vulkano::buffer::BufferAccess;
 use vulkano::buffer::TypedBufferAccess;
@@ -26,9 +27,40 @@ use crate::math::Bitangent;
 use crate::math::Normal;
 use crate::math::Texcoord;
 use crate::math::Vertex;
+use crate::support::object::{Scene, Mesh};
+use crate::support::camera::Camera;
 
 pub mod camera;
 pub mod object;
+fn array_to_matrix(mat:[[f32;4];4])-> cgmath::Matrix<f32> {
+    cgmath::Matrix4::new(mat[0][0],mat[0][1],mat[0][2],mat[0][3],
+     mat[1][0],mat[1][1],mat[1][2],mat[1][3],
+     mat[2][0],mat[2][1],mat[2][2],mat[2][3],
+     mat[3][0],mat[3][1],mat[3][2],mat[3][3],
+    )
+}
+pub fn load_scene(filepath: &str,queue:Arc<Queue>, device:Arc<Device>)-> Arc<Scene>{
+    let (document, buffers, images) = gltf::import(filepath).unwrap();
+
+    let meshes:Arc<Vec<Mesh>> = Arc::new(Vec::new());
+    let static_mesh = Arc::new(Vec::new());
+    for node in document.scenes().next().unwrap().nodes() {
+        scene.nodes().next().unwrap().
+            meshes.push(Mesh::new_from_bin(
+                mesh.name().unwrap().to_string(),
+                array_to_matrix(matrix_to_list(node.transform().matrix())),
+                texture,
+                queue,
+                device));
+    }
+
+    Arc::from(Scene {
+        name: document.default_scene().unwrap().name().unwrap_or("Unnamed").to_string(),
+        camera: Camera::new((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+        meshes: meshes,
+        staic_mesh: static_mesh
+    })
+}
 //TODO:move to a better location in code and redefine as a component
 #[allow(dead_code)]
 pub struct RenderObject{
