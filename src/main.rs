@@ -1,15 +1,17 @@
+#[macro_use]
+extern crate vulkano;
+extern crate vulkano_shaders;
+
+extern crate vulkano_win;
+extern crate tobj;
+
 extern crate cgmath;
 extern crate winit;
 extern crate time;
 
-#[macro_use]
-extern crate vulkano;
-#[macro_use]
-extern crate vulkano_shader_derive;
-extern crate vulkano_win;
-extern crate tobj;
-
 use vulkano_win::VkSurfaceBuild;
+use winit::EventsLoop;
+use winit::WindowBuilder;
 use vulkano::sync::GpuFuture;
 
 use std::thread;
@@ -21,16 +23,20 @@ mod init;
 
 fn main() {
     let extensions = vulkano_win::required_extensions();
-    let instance = vulkano::instance::Instance::new(None, &extensions, None).expect("failed to create instance");
+    let instance = {
+        let extensions = vulkano_win::required_extensions();
+        vulkano::instance::Instance::new(None, &extensions, None).expect("failed to create Vulkan instance")
+    };
 
     let physical = vulkano::instance::PhysicalDevice::enumerate(&instance).next().expect("No device available");
     println!("Using device: {} (type: {:?})", physical.name(), physical.ty());
 
-    let mut events_loop = winit::EventsLoop::new();
+    let mut events_loop = EventsLoop::new();
     //sets up the window
-    let surface = winit::WindowBuilder::new().build_vk_surface(&events_loop, instance.clone()).unwrap();
+    let surface = WindowBuilder::new().build_vk_surface(&events_loop, instance.clone()).unwrap();
     surface.window().grab_cursor(true).expect("Failed to grab cursor");
     surface.window().hide_cursor(true);
+
 
     let mut dimensions;
 
@@ -60,8 +66,9 @@ fn main() {
             .expect("Failed to create swapchain")
     };
 
-    let filepath = "src/bencube/bencube";
+    //let filepath = "src/bencube/bencube";
     let filepath2 = "src/texturedmodel/Low";
+    let filepath = "src/texturedmodel/Low";
 
     let sampler = vulkano::sampler::Sampler::new(device.clone(), vulkano::sampler::Filter::Linear,
                                                  vulkano::sampler::Filter::Linear, vulkano::sampler::MipmapMode::Nearest,
@@ -122,7 +129,6 @@ fn main() {
             }
         ).unwrap()
     );
-
     //This will crash if the shader file isn't correct e.g. input not defined via the impl vertex macro
     //TODO:future proof this. Allow for more renderpasses for e.g. post processing
     let pipeline = Arc::new(vulkano::pipeline::GraphicsPipeline::start()
@@ -172,8 +178,9 @@ fn main() {
         //fps counter only print every 30 to save time
         count = count % 30;
         if count == 1{
-            println!{"FPS: {}", 1.0/delta_time};
+            //println!{"FPS: {}", 1.0/delta_time};
         }
+
         count += 1;
         //should move to movement system
         if (key_xy.x != 0.0) || (key_xy.y != 0.0) {
@@ -265,6 +272,9 @@ fn main() {
                 .add_buffer(static_uniform_buffers_subbuffers[i].clone()).unwrap()
                 .add_sampled_image(static_meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap()
                 .add_sampled_image(static_meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_metallic.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_roughness.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_ao.clone(),sampler.clone()).unwrap()
                 .build().unwrap()));
         }
         let mut sets = Vec::new();
@@ -273,6 +283,9 @@ fn main() {
                 .add_buffer(uniform_buffers_subbuffers[i].clone()).unwrap()
                 .add_sampled_image(meshes[i].render_object.texture_base.clone(),sampler.clone()).unwrap()
                 .add_sampled_image(meshes[i].render_object.texture_normal.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_metallic.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_roughness.clone(),sampler.clone()).unwrap()
+                .add_sampled_image(static_meshes[i].render_object.texture_ao.clone(),sampler.clone()).unwrap()
                 .build().unwrap()));
         }
 
@@ -460,18 +473,15 @@ fn main() {
     }
 }
 mod vs {
-    #[derive(VulkanoShader)]
-    #[ty = "vertex"]
-    #[path = "src/shader.vert"]
-
-    #[allow(dead_code)]
-    struct Dummy;
+    vulkano_shaders::shader!{
+        ty: "vertex",
+        path: "src/shader.vert"
+    }
 }
 mod fs {
-    #[derive(VulkanoShader)]
-    #[ty = "fragment"]
-    #[path = "src/shader.frag"]
 
-    #[allow(dead_code)]
-    struct Dummy;
+    vulkano_shaders::shader!{
+        ty: "fragment",
+        path: "src/shader.frag"
+    }
 }

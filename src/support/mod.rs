@@ -38,6 +38,9 @@ pub struct RenderObject{
 	pub normal_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Normal]>>,
 	pub texture_base:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
 	pub texture_normal:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
+    pub texture_metallic:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
+    pub texture_roughness:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
+    pub texture_ao:Arc<ImmutableImage<R8G8B8A8Srgb, PotentialDedicatedAllocation<StdMemoryPoolAlloc>>>,
 	pub texture_coords:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[Texcoord]>>,
 	pub index_buffer:Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[u32]>>,
 }
@@ -45,9 +48,9 @@ pub struct RenderObject{
 impl RenderObject{
 	fn new(filepath: &str, queue:Arc<vulkano::device::Queue>, device:Arc<vulkano::device::Device>)->RenderObject{
 		let mut vertices:Vec<Vertex> = Vec::new();
-		let mut tangents_temp:Vec<Tangent> = Vec::new();
+		//let mut tangents_temp:Vec<Tangent> = Vec::new();
 		let mut tangents:Vec<Tangent> = Vec::new();
-		let mut bitangents_temp:Vec<Bitangent> = Vec::new();
+		//let mut bitangents_temp:Vec<Bitangent> = Vec::new();
 		let mut bitangents:Vec<Bitangent> = Vec::new();
 		let mut coords:Vec<Texcoord> = Vec::new();
         let mut normals_temp:Vec<Normal> = Vec::new();
@@ -84,30 +87,37 @@ impl RenderObject{
 			let temp = Tangent{tangent:((f*(delta_uv2.coord.1*edge1.position.0 - delta_uv1.coord.1*edge2.position.0))/255.0,
                                         (f*(delta_uv2.coord.1*edge1.position.1 - delta_uv1.coord.1*edge2.position.1))/255.0,
                                         (f*(delta_uv2.coord.1*edge1.position.2 - delta_uv1.coord.1*edge2.position.2))/255.0)}.normalize();
-			tangents_temp.push(temp);
-			tangents_temp.push(temp);
-			tangents_temp.push(temp);
+			//tangents_temp.push(temp);
+			//tangents_temp.push(temp);
+			//tangents_temp.push(temp);
 
+            tangents.push(temp);
+            tangents.push(temp);
+            tangents.push(temp);
 
 			let temp = Bitangent{bitangent:((f*(-delta_uv2.coord.0*edge1.position.0 - delta_uv1.coord.0*edge2.position.0))/255.0,
                                             (f*(-delta_uv2.coord.0*edge1.position.1 - delta_uv1.coord.0*edge2.position.1))/255.0,
                                             (f*(-delta_uv2.coord.0*edge1.position.2 - delta_uv1.coord.0*edge2.position.2))/255.0)}.normalize();
 
-			bitangents_temp.push(temp);
-			bitangents_temp.push(temp);
-			bitangents_temp.push(temp);
+			//bitangents_temp.push(temp);
+			//bitangents_temp.push(temp);
+			//bitangents_temp.push(temp);
+
+            bitangents.push(temp);
+            bitangents.push(temp);
+            bitangents.push(temp);
 		}
-		for _i in 0..(bitangents_temp.len()){
-            normals.push( Normal{ normal: (0.0,0.0,0.0)});
-			tangents.push(Tangent{ tangent: (0.0,0.0,0.0)});
-			bitangents.push(Bitangent{ bitangent: (0.0,0.0,0.0)});
-		}
-		for i in 0..indices.len(){
-            normals[indices[i] as usize] += normals_temp[indices[i] as usize];
-			tangents[indices[i] as usize] += tangents_temp[indices[i] as usize];
-			bitangents[indices[i] as usize] += bitangents_temp[indices[i] as usize];
-		}
-		for i in 0..tangents.len(){
+		//for _i in 0..(bitangents_temp.len()){
+        //    normals.push( Normal{ normal: (0.0,0.0,0.0)});
+		//	tangents.push(Tangent{ tangent: (0.0,0.0,0.0)});
+		//	bitangents.push(Bitangent{ bitangent: (0.0,0.0,0.0)});
+		//}
+		//for i in 0..indices.len(){
+        //    normals[indices[i] as usize] += normals_temp[indices[i] as usize];
+		//	tangents[indices[i] as usize] += tangents_temp[indices[i] as usize];
+		//	bitangents[indices[i] as usize] += bitangents_temp[indices[i] as usize];
+		//}
+		for i in 0..normals.len(){
             normals[i] = normals[i].normalize();
 			tangents[i] = tangents[i].normalize();
 			bitangents[i] = bitangents[i].normalize();
@@ -133,6 +143,9 @@ impl RenderObject{
 							.expect("failed to create buffer"),
 			texture_base: crate::init::load_texture(filepath.clone().to_owned()+"_Material_BaseColor.png", queue.clone()),
 			texture_normal: crate::init::load_texture(filepath.clone().to_owned()+"_Material_Normal.png", queue.clone()),
+            texture_metallic:crate::init::load_texture(filepath.clone().to_owned()+"_Material_Metallic.png", queue.clone()),
+            texture_roughness:crate::init::load_texture(filepath.clone().to_owned()+"_Material_Roughness.png", queue.clone()),
+            texture_ao:crate::init::load_texture(filepath.clone().to_owned()+"_Material_Ambient-occlusion.png", queue.clone()),
 		}
 	}	
 }
