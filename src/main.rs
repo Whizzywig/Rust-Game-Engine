@@ -479,6 +479,7 @@ mod vs {
     }
 }
 mod fs {
+
     vulkano_shaders::shader!{
         ty: "fragment",
         path: "src/shader.frag"
